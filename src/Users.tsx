@@ -48,10 +48,9 @@ const useUsers = ({ query }: UseUsersOptions): UseUsersResult => {
     return {
         ...state,
         refetch: () => {
-            setState((prev) => ({
+            setState({
                 status: "loading",
-                users: prev.status === "success" || prev.status === "loading" ? prev.users : undefined,
-            }));
+            });
             setTriggerCount((c) => c + 1);
         },
     };
