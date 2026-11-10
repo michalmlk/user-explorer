@@ -58,6 +58,7 @@
 .userItem {
     cursor: pointer;
     padding: var(--spacing-xs) 0;
+    display: block;
 
     &:hover {
         color: var(--accent);

@@ -3,7 +3,7 @@ import { searchUsers, type Page, type User } from "./api";
 import styles from "./Users.module.css";
 import { useDebouncedValue } from "./useDebouncedValue";
 import { useAsyncResources, type UseAsyncResourcesResult } from "./hooks/useAsyncResources";
-import { Outlet, useNavigate } from "react-router";
+import { Link, Outlet } from "react-router";
 
 type UseUsersOptions = {
     query: string;
@@ -26,8 +26,6 @@ export function Users() {
 
     const data = useUsers({ query: debouncedValue });
 
-    const navigate = useNavigate();
-
     return (
         <div className={styles.usersContainer}>
             <div className={styles.usersArea}>
@@ -45,22 +43,18 @@ export function Users() {
                 <div className={styles.usersListArea}>
                     {data.status === "error" && (
                         <>
-                            <p>Error: {data.error?.message}</p>
+                            <p>Error: {data.error.message}</p>
                             <button onClick={data.refetch}>Retry</button>
                         </>
                     )}
                     {data.status === "loading" && <p>Loading...</p>}
-                    {data.status === "success" && data.empty && <p>No users found.</p>}
-                    {data.status === "success" && !data.empty && (
+                    {data.status === "success" && data.data.items.length === 0 && <p>No users found.</p>}
+                    {data.status === "success" && (
                         <ul className={styles.usersList}>
                             {data.data.items.map((user) => (
-                                <li
-                                    className={styles.userItem}
-                                    key={user.id}
-                                    onClick={() => navigate(`/clients/${user.id}`)}
-                                >
+                                <Link className={styles.userItem} key={user.id} to={`/clients/${user.id}`}>
                                     {user.name} ({user.email})
-                                </li>
+                                </Link>
                             ))}
                         </ul>
                     )}
