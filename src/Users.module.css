@@ -1,0 +1,35 @@
+.usersContainer {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.usersList {
+    list-style: none;
+    padding: 0;
+}
+
+.userSearchContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+
+    .userInput {
+        width: 100%;
+        padding: var(--spacing-s);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        margin-bottom: var(--spacing-m);
+        box-sizing: border-box;
+    }
+}
+
+.userItem {
+    cursor: pointer;
+    padding: var(--spacing-xs) 0;
+
+    &:hover {
+        color: var(--accent);
+    }
+}
