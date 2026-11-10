@@ -1,12 +1,42 @@
 .usersContainer {
     width: 100%;
-    max-width: 720px;
+    max-width: 1280px;
     margin: 0 auto;
+    height: 100vh;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-m);
+    grid-template-areas: "usersList userDetails";
+    padding: var(--spacing-m);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.usersArea {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-m);
+    grid-area: usersList;
+    overflow-y: hidden;
+}
+
+.usersListArea {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-m);
+    overflow-y: hidden;
+}
+
+.userDetails {
+    grid-area: userDetails;
+    border-left: 1px solid var(--border);
 }
 
 .usersList {
     list-style: none;
     padding: 0;
+    overflow-y: auto;
 }
 
 .userSearchContainer {
