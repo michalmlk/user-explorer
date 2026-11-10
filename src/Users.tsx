@@ -7,57 +7,53 @@ type UseUsersOptions = {
     query: string;
 };
 
-type UseUsersResult = {
-    loading: boolean;
-    error: Error | null;
-    empty: boolean;
-    users?: Page<User>;
-    success: boolean;
+type UseUsersState =
+    | { status: "loading" }
+    | { status: "success"; empty: boolean; users: Page<User> }
+    | { status: "error"; error: Error | null };
+
+type UseUsersResult = UseUsersState & {
     refetch: () => void;
 };
 
 const useUsers = ({ query }: UseUsersOptions): UseUsersResult => {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
-    const [empty, setEmpty] = useState(false);
-    const [users, setUsers] = useState<Page<User>>();
-    const [success, setSuccess] = useState(false);
+    const [state, setState] = useState<UseUsersState>({
+        status: "loading",
+    });
+
     const [triggerCount, setTriggerCount] = useState(0);
 
     useEffect(() => {
-        searchUsers(query)
+        const controller = new AbortController();
+        setState({ status: "loading" });
+
+        searchUsers(query, { signal: controller.signal })
             .then((result) => {
-                setLoading(false);
-                setEmpty(result.items.length === 0);
-                setUsers(result);
-                setSuccess(true);
+                setState({
+                    status: "success",
+                    empty: result.items.length === 0,
+                    users: result,
+                });
             })
-            .catch((error) => {
-                setError(error);
-                setSuccess(false);
-                console.error("Error fetching users:", error);
-            })
-            .finally(() => {
-                setLoading(false);
+            .catch((e: unknown) => {
+                if (e instanceof DOMException && e.name === "AbortError") return;
+                setState({ status: "error", error: e as Error });
             });
 
         return () => {
-            setLoading(true);
-            setError(null);
-            setEmpty(false);
-            setUsers(undefined);
-            setSuccess(false);
-            setTriggerCount(0);
+            controller.abort();
         };
     }, [query, triggerCount]);
 
     return {
-        loading,
-        error,
-        empty,
-        users,
-        success,
-        refetch: () => setTriggerCount((c) => c + 1),
+        ...state,
+        refetch: () => {
+            setState((prev) => ({
+                status: "loading",
+                users: prev.status === "success" || prev.status === "loading" ? prev.users : undefined,
+            }));
+            setTriggerCount((c) => c + 1);
+        },
     };
 };
 
@@ -66,8 +62,7 @@ export function Users(): JSX.Element {
 
     const debouncedValue = useDebouncedValue({ value: inputValue });
 
-    const { users, loading, error, empty, refetch } = useUsers({ query: debouncedValue });
-    const shouldDisplayUsersList = !loading && !error && !empty;
+    const data = useUsers({ query: debouncedValue });
 
     return (
         <div className={styles.usersContainer}>
@@ -83,21 +78,21 @@ export function Users(): JSX.Element {
                 />
             </div>
             <p>Debounced value: {debouncedValue}</p>
-            {error && (
+            {data.status === "error" && (
                 <>
-                    <p>Error: {error.message}</p>
-                    <button onClick={refetch}>Retry</button>
+                    <p>Error: {data.error?.message}</p>
+                    <button onClick={data.refetch}>Retry</button>
                 </>
             )}
-            {loading && <p>Loading...</p>}
-            {shouldDisplayUsersList && (
+            {data.status === "loading" && <p>Loading...</p>}
+            {data?.status === "success" && (
                 <ul className={styles.usersList}>
-                    {empty && <li>No users found.</li>}
-                    {users?.items.map((user) => (
+                    {data.users.items.length === 0 && <li>No users found.</li>}
+                    {data.users.items.map((user) => (
                         <li className={styles.userItem} key={user.id}>
                             {user.name} ({user.email})
                         </li>
-                    )) || null}
+                    ))}
                 </ul>
             )}
         </div>
