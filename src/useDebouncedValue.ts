@@ -5,19 +5,18 @@ type UseDebouncedValueOptions = {
     delay?: number;
 };
 
-export const useDebouncedValue = ({value, delay = 300}: UseDebouncedValueOptions): string => {
+export const useDebouncedValue = ({ value, delay = 300 }: UseDebouncedValueOptions): string => {
     const [debouncedValue, setDebouncedValue] = useState(value);
-    
+
     useEffect(() => {
         const handler = setTimeout(() => {
-            console.log('Setting debounced value to', value);
             setDebouncedValue(value);
         }, delay);
 
         return () => {
             clearTimeout(handler);
-        }
-    },[value, delay]);
+        };
+    }, [value, delay]);
 
     return debouncedValue;
-}
+};

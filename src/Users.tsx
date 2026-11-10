@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, useState } from "react";
 import { searchUsers, type Page, type User } from "./api";
 import styles from "./Users.module.css";
 import { useDebouncedValue } from "./useDebouncedValue";
@@ -10,53 +10,55 @@ type UseUsersOptions = {
 type UseUsersState =
     | { status: "loading" }
     | { status: "success"; empty: boolean; users: Page<User> }
-    | { status: "error"; error: Error | null };
+    | { status: "error"; error: Error };
 
 type UseUsersResult = UseUsersState & {
     refetch: () => void;
 };
 
 const useUsers = ({ query }: UseUsersOptions): UseUsersResult => {
-    const [state, setState] = useState<UseUsersState>({
-        status: "loading",
-    });
+    const [settled, setSettled] = useState<{
+        key: string;
+        state: Exclude<UseUsersState, { status: "loading" }>;
+    } | null>(null);
 
     const [triggerCount, setTriggerCount] = useState(0);
 
+    const key = `${triggerCount}:${query}`;
+
     useEffect(() => {
         const controller = new AbortController();
-        setState({ status: "loading" });
 
         searchUsers(query, { signal: controller.signal })
             .then((result) => {
-                setState({
-                    status: "success",
-                    empty: result.items.length === 0,
-                    users: result,
+                setSettled({
+                    key,
+                    state: {
+                        status: "success",
+                        empty: result.items.length === 0,
+                        users: result,
+                    },
                 });
             })
             .catch((e: unknown) => {
                 if (e instanceof DOMException && e.name === "AbortError") return;
-                setState({ status: "error", error: e as Error });
+                setSettled({ key, state: { status: "error", error: e as Error } });
             });
 
         return () => {
             controller.abort();
         };
-    }, [query, triggerCount]);
+    }, [query, key]);
+
+    const state: UseUsersState = settled && settled.key === key ? settled.state : { status: "loading" };
 
     return {
         ...state,
-        refetch: () => {
-            setState({
-                status: "loading",
-            });
-            setTriggerCount((c) => c + 1);
-        },
+        refetch: () => setTriggerCount((c) => c + 1),
     };
 };
 
-export function Users(): JSX.Element {
+export function Users() {
     const [inputValue, setInputValue] = useState<string>("");
 
     const debouncedValue = useDebouncedValue({ value: inputValue });
@@ -76,7 +78,6 @@ export function Users(): JSX.Element {
                     onChange={(e) => setInputValue(e.target.value)}
                 />
             </div>
-            <p>Debounced value: {debouncedValue}</p>
             {data.status === "error" && (
                 <>
                     <p>Error: {data.error?.message}</p>
@@ -84,9 +85,9 @@ export function Users(): JSX.Element {
                 </>
             )}
             {data.status === "loading" && <p>Loading...</p>}
-            {data?.status === "success" && (
+            {data?.status === "success" && data?.empty && <p>No users found.</p>}
+            {data?.status === "success" && !data?.empty && (
                 <ul className={styles.usersList}>
-                    {data.users.items.length === 0 && <li>No users found.</li>}
                     {data.users.items.map((user) => (
                         <li className={styles.userItem} key={user.id}>
                             {user.name} ({user.email})
