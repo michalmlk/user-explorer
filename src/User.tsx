@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
-import { useAsyncResources } from "./hooks/useAsyncResources";
 import { getUser } from "./api";
+import { useQuery } from "@tanstack/react-query";
 
 export function User() {
     const { id } = useParams<{ id: string }>();
@@ -11,33 +11,28 @@ export function User() {
 }
 
 function UserDetails({ id }: { id: string }) {
-    const data = useAsyncResources({
-        fetchFn: getUser,
-        args: [id],
-        resourceKey: ["user", id],
+    const { data, status, error, refetch } = useQuery({
+        queryFn: () => getUser(id),
+        queryKey: ["user", id],
     });
 
-    switch (data.status) {
-        case "loading":
+    switch (status) {
+        case "pending":
             return <div>Loading...</div>;
         case "error":
             return (
                 <div>
-                    Error: {data.error.message}
-                    <button onClick={data.refetch}>Retry</button>
+                    Error: {error.message}
+                    <button onClick={() => refetch()}>Retry</button>
                 </div>
             );
 
         case "success":
-            if (!data.data) {
-                return <div>User not found.</div>;
-            } else {
-                return (
-                    <div>
-                        <h1>{data.data.name}</h1>
-                        <p>Email: {data.data.email}</p>
-                    </div>
-                );
-            }
+            return (
+                <div>
+                    <h1>{data.name}</h1>
+                    <p>Email: {data.email}</p>
+                </div>
+            );
     }
 }

@@ -1,30 +1,19 @@
 import { useState } from "react";
-import { searchUsers, type Page, type User } from "./api";
+import { searchUsers } from "./api";
 import styles from "./Users.module.css";
 import { useDebouncedValue } from "./useDebouncedValue";
-import { useAsyncResources, type UseAsyncResourcesResult } from "./hooks/useAsyncResources";
 import { Link, Outlet } from "react-router";
-
-type UseUsersOptions = {
-    query: string;
-};
-
-const useUsers = ({ query }: UseUsersOptions): UseAsyncResourcesResult<Page<User>> => {
-    const resource = useAsyncResources({
-        fetchFn: searchUsers,
-        args: [query],
-        resourceKey: ["users", query],
-    });
-
-    return resource;
-};
+import { useQuery } from "@tanstack/react-query";
 
 export function Users() {
     const [inputValue, setInputValue] = useState<string>("");
 
     const debouncedValue = useDebouncedValue({ value: inputValue });
 
-    const data = useUsers({ query: debouncedValue });
+    const { data, isLoading, isError, isSuccess, refetch, error } = useQuery({
+        queryKey: ["users", debouncedValue],
+        queryFn: () => searchUsers(debouncedValue),
+    });
 
     return (
         <div className={styles.usersContainer}>
@@ -41,20 +30,22 @@ export function Users() {
                     />
                 </div>
                 <div className={styles.usersListArea}>
-                    {data.status === "error" && (
+                    {isError && data && (
                         <>
-                            <p>Error: {data.error.message}</p>
-                            <button onClick={data.refetch}>Retry</button>
+                            <p>Error: {error.message}</p>
+                            <button onClick={() => refetch()}>Retry</button>
                         </>
                     )}
-                    {data.status === "loading" && <p>Loading...</p>}
-                    {data.status === "success" && data.data.items.length === 0 && <p>No users found.</p>}
-                    {data.status === "success" && (
+                    {isLoading && <p>Loading...</p>}
+                    {isSuccess && data && data.items.length === 0 && <p>No users found.</p>}
+                    {isSuccess && (
                         <ul className={styles.usersList}>
-                            {data.data.items.map((user) => (
-                                <Link className={styles.userItem} key={user.id} to={`/clients/${user.id}`}>
-                                    {user.name} ({user.email})
-                                </Link>
+                            {data.items.map((user) => (
+                                <li key={user.id}>
+                                    <Link className={styles.userItem} to={`/clients/${user.id}`}>
+                                        {user.name} ({user.email})
+                                    </Link>
+                                </li>
                             ))}
                         </ul>
                     )}

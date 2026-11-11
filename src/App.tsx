@@ -1,12 +1,10 @@
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { Users } from "./Users";
 import { User } from "./User";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const router = createBrowserRouter([
-    {
-        path: "/",
-        element: <></>,
-    },
+    { path: "/", element: <Navigate to="/clients" replace /> },
     {
         path: "/clients",
         element: <Users />,
@@ -20,7 +18,13 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-    return <RouterProvider router={router} />;
+    const queryClient = new QueryClient();
+
+    return (
+        <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+        </QueryClientProvider>
+    );
 }
 
 export default App;
