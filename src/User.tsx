@@ -1,6 +1,8 @@
 import { useParams } from "react-router";
-import { getUser } from "./api";
-import { useQuery } from "@tanstack/react-query";
+import { getUser, type Page, type User } from "./api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { userKeys } from "./services/userKeys";
+import { useUpadateUser } from "./services/useUpdateUser";
 
 export function User() {
     const { id } = useParams<{ id: string }>();
@@ -11,9 +13,18 @@ export function User() {
 }
 
 function UserDetails({ id }: { id: string }) {
-    const { data, status, error, refetch } = useQuery({
+    const queryClient = useQueryClient();
+    const updateUserMutation = useUpadateUser();
+    const { refetch, data, error, status } = useQuery({
+        queryKey: userKeys.detail(id),
         queryFn: () => getUser(id),
-        queryKey: ["user", id],
+        initialData: () => {
+            for (const [, page] of queryClient.getQueriesData<Page<User>>({ queryKey: userKeys.lists() })) {
+                const hit = page?.items.find((u) => u.id === id);
+                if (hit) return hit;
+            }
+        },
+        initialDataUpdatedAt: () => queryClient.getQueryState(userKeys.lists())?.dataUpdatedAt,
     });
 
     switch (status) {
@@ -32,6 +43,11 @@ function UserDetails({ id }: { id: string }) {
                 <div>
                     <h1>{data.name}</h1>
                     <p>Email: {data.email}</p>
+                    <input
+                        type="checkbox"
+                        checked={data.active}
+                        onChange={(e) => updateUserMutation.mutate({ id, patch: { active: e.target.checked } })}
+                    />
                 </div>
             );
     }

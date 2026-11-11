@@ -37,6 +37,9 @@
     list-style: none;
     padding: 0;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-s);
 }
 
 .userSearchContainer {
@@ -58,8 +61,29 @@
 .userItem {
     cursor: pointer;
     padding: var(--spacing-xs) 0;
+    text-decoration: none;
+    color: var(--text-h);
 
     &:hover {
         color: var(--accent);
+    }
+
+    display: flex;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding: var(--spacing-xs) var(--spacing-m);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+
+    p {
+        margin: 0;
+    }
+
+    .userName {
+        font-size: 13px;
+    }
+    .userEmail {
+        font-size: 11px;
+        color: var(--text);
     }
 }

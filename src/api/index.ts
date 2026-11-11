@@ -1,4 +1,5 @@
-// src/api/fakeApi.ts
+import { faker, type SexType } from "@faker-js/faker";
+
 export type User = {
     id: string;
     name: string;
@@ -14,9 +15,15 @@ export type Page<T> = {
     pageSize: number;
 };
 
-const FIRST = ["Anna", "Piotr", "Maria", "Tomasz", "Ewa", "Jakub", "Zofia", "Marcin"];
-const LAST = ["Nowak", "Kowalska", "Wiśniewski", "Lewandowska", "Zieliński", "Szymańska"];
-const COMPANY = ["Nordwind", "Altex", "Bitlane", "Kormoran", "Verva", "Stalmar"];
+export class ApiError extends Error {
+    public readonly status: number;
+
+    constructor(status: number, statusText: string) {
+        super(`${status} ${statusText}`);
+        this.name = "ApiError";
+        this.status = status;
+    }
+}
 
 /** FNV-1a — deterministyczny PRNG w [0, 1). Te same wejścia = te same wyniki. */
 function hash(s: string): number {
@@ -28,13 +35,19 @@ function hash(s: string): number {
     return (h >>> 0) / 0xffffffff;
 }
 
-const DB: User[] = Array.from({ length: 5000 }, (_, i) => ({
-    id: `u${String(i).padStart(4, "0")}`,
-    name: `${FIRST[i % FIRST.length]} ${LAST[(i >> 3) % LAST.length]}`,
-    email: `user${i}@${COMPANY[i % COMPANY.length].toLowerCase()}.pl`,
-    company: COMPANY[i % COMPANY.length],
-    active: hash(`user-${i}`) > 0.3,
-}));
+const DB: User[] = Array.from({ length: 5000 }, (_, i) => {
+    const sex = faker.person.sex() as SexType;
+    const firstName = faker.person.firstName(sex);
+    const lastName = faker.person.lastName(sex);
+
+    return {
+        id: faker.string.nanoid(),
+        name: `${firstName} ${lastName}`,
+        email: faker.internet.email({ firstName, lastName }),
+        company: faker.company.name(),
+        active: hash(`user-${i}`) > 0.3,
+    };
+});
 
 const MIN_LATENCY = 120;
 const MAX_LATENCY = 1500;
@@ -42,7 +55,6 @@ const FAILURE_RATE = 0.25;
 
 let requestSeq = 0;
 
-/** Im krótsze zapytanie, tym wolniejsza odpowiedź — generator wyścigów. */
 function latencyFor(key: string): number {
     const subject = key.split(":")[1] ?? ""; // "search:anna:1:20" → "anna"
     const base = MAX_LATENCY - Math.min(subject.length, 8) * 150;
@@ -74,7 +86,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 async function respond<T>(key: string, produce: () => T, signal?: AbortSignal): Promise<T> {
     await sleep(latencyFor(key), signal);
     if (hash(`fail-${key}-${requestSeq++}`) < FAILURE_RATE) {
-        throw new Error("500 Internal Server Error");
+        throw new ApiError(500, "Internal Server Error");
     }
     return produce();
 }
@@ -107,7 +119,7 @@ export function getUser(id: string, opts: { signal?: AbortSignal } = {}): Promis
         `user:${id}`,
         () => {
             const found = DB.find((u) => u.id === id);
-            if (!found) throw new Error("404 Not Found");
+            if (!found) throw new ApiError(404, "Not Found");
             return { ...found };
         },
         opts.signal,
@@ -123,7 +135,7 @@ export function updateUser(
         `update:${id}:${JSON.stringify(patch)}`,
         () => {
             const i = DB.findIndex((u) => u.id === id);
-            if (i === -1) throw new Error("404 Not Found");
+            if (i === -1) throw new ApiError(404, "Not Found");
             DB[i] = { ...DB[i], ...patch };
             return { ...DB[i] };
         },
