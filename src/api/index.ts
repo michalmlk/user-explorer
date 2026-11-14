@@ -13,6 +13,7 @@ export type Page<T> = {
     total: number;
     page: number;
     pageSize: number;
+    totalPages: number;
 };
 
 export class ApiError extends Error {
@@ -108,6 +109,7 @@ export function searchUsers(
                 total: all.length,
                 page,
                 pageSize,
+                totalPages: Math.ceil(all.length / pageSize),
             };
         },
         signal,
