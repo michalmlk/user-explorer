@@ -29,7 +29,7 @@ export const useUpdateUser = () => {
             if (!ctx) return;
             queryClient.setQueryData(userKeys.detail(id), ctx.prevDetails);
             ctx.prevLists.forEach(([key, data]) => queryClient.setQueryData(key, data));
-            queryClient.cancelQueries({ queryKey: userKeys.detail(id) });
+            queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
         },
         onSuccess: (updated) => {
             queryClient.setQueryData(userKeys.detail(updated.id), updated); // źródło prawdy z serwera

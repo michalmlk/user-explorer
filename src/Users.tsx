@@ -6,7 +6,7 @@ import { Link, Outlet } from "react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { userKeys } from "./services/userKeys";
 import { useUpdateUser } from "./services/useUpdateUser";
-import { PageButtons } from "./components/PagePuttons";
+import { PageButtons } from "./components/PageButtons";
 
 export function Users() {
     const [inputValue, setInputValue] = useState<string>("");
@@ -75,6 +75,7 @@ export function Users() {
                                         </Link>
                                         <input
                                             type="checkbox"
+                                            aria-label={`Active user ${user.name}`}
                                             checked={user.active}
                                             onChange={(e) => {
                                                 updateUserMutation.mutate({
