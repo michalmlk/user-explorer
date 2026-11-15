@@ -1,29 +1,12 @@
 import { useState } from "react";
 import { searchUsers } from "./api";
 import styles from "./Users.module.css";
-import { useDebouncedValue } from "./useDebouncedValue";
+import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { Link, Outlet } from "react-router";
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { userKeys } from "./services/userKeys";
-import { useUpadateUser } from "./services/useUpdateUser";
-
-type PageButtonProps = {
-    onNext: () => void;
-    onPrev: () => void;
-};
-
-const PageButtons = ({ onNext, onPrev }: PageButtonProps) => {
-    return (
-        <>
-            <button className={styles.pageButton} onClick={onPrev}>
-                PREV
-            </button>
-            <button className={styles.pageButton} onClick={onNext}>
-                NEXT
-            </button>
-        </>
-    );
-};
+import { useUpdateUser } from "./services/useUpdateUser";
+import { PageButtons } from "./components/PagePuttons";
 
 export function Users() {
     const [inputValue, setInputValue] = useState<string>("");
@@ -31,12 +14,12 @@ export function Users() {
 
     const debouncedValue = useDebouncedValue({ value: inputValue });
 
-    const updateUserMutation = useUpadateUser();
+    const updateUserMutation = useUpdateUser();
 
-    const { data, isLoading, isError, isSuccess, refetch, error } = useQuery({
+    const { data, isLoading, isError, isSuccess, refetch, error, isPlaceholderData } = useQuery({
         queryKey: userKeys.list(debouncedValue, page),
         queryFn: ({ signal }) => searchUsers(debouncedValue, { signal, page }),
-        staleTime: 3_000,
+        staleTime: Infinity,
         placeholderData: keepPreviousData,
     });
 
@@ -58,7 +41,7 @@ export function Users() {
                     />
                 </div>
                 <div className={styles.usersListArea}>
-                    {isError && data && (
+                    {isError && (
                         <>
                             <p>Error: {error.message}</p>
                             <button onClick={() => refetch()}>Retry</button>
@@ -74,9 +57,16 @@ export function Users() {
                                         setPage((prev) => (prev >= data.totalPages ? prev : prev + 1));
                                     }}
                                     onPrev={() => setPage((prev) => (prev <= 1 ? prev : prev - 1))}
+                                    totalPages={data.totalPages}
+                                    currentPage={data.page}
+                                    isLoadingNewPage={isPlaceholderData}
                                 />
                             </div>
-                            <ul className={styles.usersList}>
+                            <ul
+                                className={styles.usersList}
+                                aria-busy={isPlaceholderData}
+                                style={{ opacity: isPlaceholderData ? 0.5 : 1 }}
+                            >
                                 {data.items.map((user) => (
                                     <li key={user.id} className={styles.userItem}>
                                         <Link to={`/clients/${user.id}`}>

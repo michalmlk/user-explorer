@@ -18,15 +18,15 @@ const router = createBrowserRouter([
     },
 ]);
 
-function App() {
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: (_, error) => error instanceof ApiError && error.status === 500,
-            },
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: (failureCount, error) => error instanceof ApiError && error.status === 500 && failureCount < 3,
         },
-    });
+    },
+});
 
+function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />

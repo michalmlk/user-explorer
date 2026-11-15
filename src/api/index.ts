@@ -16,6 +16,8 @@ export type Page<T> = {
     totalPages: number;
 };
 
+export type UserPatch = Partial<Pick<User, "name" | "company" | "active">>;
+
 export class ApiError extends Error {
     public readonly status: number;
 

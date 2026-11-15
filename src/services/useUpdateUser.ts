@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateUser, type Page, type User } from "../api";
+import { updateUser, type Page, type User, type UserPatch } from "../api";
 import { userKeys } from "./userKeys";
 
 type UpdateParams = {
     id: string;
-    patch: Partial<User>;
+    patch: UserPatch;
 };
 
-export const useUpadateUser = () => {
+export const useUpdateUser = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({ id, patch }: UpdateParams) => updateUser(id, patch),
@@ -29,6 +29,7 @@ export const useUpadateUser = () => {
             if (!ctx) return;
             queryClient.setQueryData(userKeys.detail(id), ctx.prevDetails);
             ctx.prevLists.forEach(([key, data]) => queryClient.setQueryData(key, data));
+            queryClient.cancelQueries({ queryKey: userKeys.detail(id) });
         },
         onSuccess: (updated) => {
             queryClient.setQueryData(userKeys.detail(updated.id), updated); // źródło prawdy z serwera

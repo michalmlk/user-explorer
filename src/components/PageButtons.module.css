@@ -1,0 +1,22 @@
+.pageButton {
+    width: 100px;
+    height: 30px;
+    border: none;
+    border-radius: 100px;
+    font-size: 13px;
+}
+
+.container {
+    display: flex;
+    gap: var(--spacing-s);
+
+    .pageButtons {
+        display: flex;
+        gap: var(--spacing-s);
+    }
+
+    .pagesCounter {
+        display: flex;
+        gap: var(--spacing-s);
+    }
+}
